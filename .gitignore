@@ -1,0 +1,7 @@
+.env
+data
+exploration
+scrape.py
+__pycache__
+*.csv#
+log*
