@@ -692,7 +692,7 @@ To address the proposed change of deleting the "scripts" directory from the proj
 **Reason for the Changes:**
 - The "scripts" directory is not actively utilized within the project, and its contents are outdated. Removing this directory will streamline the codebase, eliminate unnecessary clutter, and reduce confusion for developers. This change reflects good code hygiene practices by maintaining a clean and organized codebase, which improves the overall quality and maintainability of the project.
 
-## Repository: getredash/redash#1252
+## Repository: getredash/redash#125e
 ### Explanation
 To address the issue of worker timeout due to prolonged query execution times in the Presto query runner, the proposed enhancement involves implementing schema loading support using `information_schema`. This change is necessary to optimize query performance, especially in instances with a large number of tables. Here's a detailed explanation of the code changes needed and the rationale behind them:
 
@@ -1194,6 +1194,8 @@ To address the issue of the broken link in the documentation, the following code
 By making these changes, the documentation will be more reliable and user-friendly, providing a better experience for developers using Flask and its extensions.
 
 ## Repository: RaRe-Technologies/gensim#1217
+### Comments on generation
+*Exists under a different name, not sure if the program was able to fetch the commits
 ### Explanation
 To address the issue with the `wordrank` algorithm's maximum iteration calculation and improve user experience by preventing unnecessary warnings, the following code changes need to be made:
 

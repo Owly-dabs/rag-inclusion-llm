@@ -5,7 +5,7 @@ import json
 def build_prompt(
     topic_name: str,
     summary: str,
-    code_regions: list[CodeRegion],
+    code_region: CodeRegion,
     extra: dict,
     instructions: str
 ) -> str:
@@ -23,15 +23,10 @@ def build_prompt(
         str: Formatted prompt string to send to the LLM.
     """
 
-    code_section = []
-    for region in code_regions:
-        formatted = f"# {region.filename}\n" + "\n---\n".join(region.regions)
-        code_section.append(formatted)
-
     prompt_dict = {
         "topic": topic_name,
         "summary": summary,
-        "code_context": code_section,
+        "code_context": code_region.code,
         "readme": extra.get("readme", ""),
         "instructions": instructions
     }

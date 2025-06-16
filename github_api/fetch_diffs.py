@@ -47,7 +47,7 @@ def _extract_code_regions_around_patch(pre_change_code: str, patch: str, context
 def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lines: int = 3) -> list[CodeRegion]:
     repo = g.get_repo(repo_full_name)
     commit_objs = get_commit_objects(repo, commits)
-    region_map: dict[str, dict[str, list[str]]] = {}
+    code_regions: list[CodeRegion] = []
 
     for commit in commit_objs:
         pre_change_files = _get_file_content_before_commit(repo, commit)
@@ -59,15 +59,13 @@ def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lin
                 pre_code = pre_change_files[file.filename]
                 regions = _extract_code_regions_around_patch(pre_code, file.patch, context_lines)
 
-                region_map.setdefault(file.filename, {
-                    "before": pre_code,
-                    "regions": []
-                })["regions"].extend(regions)
+                for region in regions:
+                    code_regions.append(CodeRegion(
+                        filename=file.filename,
+                        code=region
+                    ))
 
-    return [
-        CodeRegion(filename=fn, before=data["before"], regions=data["regions"])
-        for fn, data in region_map.items()
-    ]
+    return code_regions
 
 
 def get_code_diffs(repo_full_name: str, commits: list) -> str:

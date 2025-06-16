@@ -11,8 +11,7 @@ class CommitInfo:
 @dataclass
 class CodeRegion:
     filename: str
-    before: str
-    regions: List[str]
+    code: str
 
 @dataclass
 class PromptRow:

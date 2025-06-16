@@ -5,3 +5,7 @@ scrape.py
 __pycache__
 *.csv#
 log*
+!utils/logger.py
+.clj-kondo
+.lsp
+.venv
