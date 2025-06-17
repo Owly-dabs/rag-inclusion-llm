@@ -20,9 +20,21 @@ DATA_SAMPLE = "sample_issues2" # Sample data identifier
 
 DATA_PATH = Path(f"data/{DATA_SAMPLE}.feather")  # Feather format
 MAPTOPIC_PATH = Path("data/maptopics.csv")
-OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations.jsonl")
+OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations_newprompt.jsonl")
 
-FIXED_INSTRUCTIONS = "Explain what code changes need to be made, and why."
+# FIXED_INSTRUCTIONS = "Explain what code changes need to be made, and why."
+FIXED_INSTRUCTIONS = '''
+Given the topic and summary of the issue, analyze the provided code region and explain both why a change is necessary and what changes should be made to address or improve it. Be specific to the code shown, but acknowledge if the fix likely involves updates in other parts of the codebase. Justify your recommendations clearly and concisely, referencing relevant patterns or best practices where appropriate. Use the following format:
+
+Explanation of the issue:
+<What is the issue and why a change is needed (1 paragraph)>
+
+Suggested code changes:
+<Describe what changes should be made to fix or improve the code>
+
+Supplementary notes (if any):
+<Any references to best practices, broader architectural concerns, etc.>
+'''
 
 @task
 def load_data() -> list[PromptRow]:
