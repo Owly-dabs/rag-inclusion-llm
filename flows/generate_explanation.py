@@ -52,16 +52,17 @@ def load_data() -> list[PromptRow]:
 
 @task
 def load_topic_map():
-    return pd.read_csv(MAPTOPIC_PATH).set_index("topicno2").to_dict()["topic_name"]
+    return pd.read_csv(MAPTOPIC_PATH).set_index("topicno1").to_dict()["topic_name"]
 
 
 @task
-def save_response(repo, issue_no, explanation):
+def save_response(repo, issue_no, topic_name, explanation):
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, "a") as f:
         f.write(json.dumps({
             "repo": repo,
             "issue_no": issue_no,
+            "topic": topic_name,
             "explanation": explanation
         }) + "\n")
 
@@ -73,7 +74,7 @@ def explanation_flow():
 
     for row in rows:
         try:
-            topic_name = map_topic_number_to_name(row.bertopic, topic_map)
+            topic_name = f"{row.bertopic}: {map_topic_number_to_name(row.bertopic, topic_map)}"
             commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
             code_regions: list[CodeRegion] = get_code_regions(row.repo, commits)
             logger.debug(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
@@ -91,7 +92,7 @@ def explanation_flow():
                 explanation = generate_llm_explanation(prompt_json)
                 region_outputs.append({"code": region.code, "explanation": explanation})
 
-            save_response(row.repo, row.issue_no, region_outputs)
+            save_response(row.repo, row.issue_no, topic_name, region_outputs)
 
         except Exception as e:
             print(f"Error processing {row.repo}#{row.issue_no}: {e}")

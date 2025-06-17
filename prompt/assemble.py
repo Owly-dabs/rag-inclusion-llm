@@ -15,7 +15,7 @@ def build_prompt(
     Args:
         topic_name (str): Mapped topic from BERTopic.
         summary (str): The summary of the issue or PR.
-        code_regions (list[CodeRegion]): Code context before changes.
+        code_region [CodeRegion]: Code context before changes.
         extra (dict): Optional metadata like commits, README, etc.
         instructions (str): Instruction string for the LLM.
 
