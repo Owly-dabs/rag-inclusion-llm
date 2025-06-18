@@ -2,6 +2,7 @@ from prefect import flow, task
 import pandas as pd
 from pathlib import Path
 import json
+from dataclasses import asdict
 
 # Local imports (these modules you will define)
 from utils.logger import logger
@@ -11,10 +12,10 @@ from github_api.fetch_readme import get_readme_head
 from utils.topic_mapping import map_topic_number_to_name
 from prompt.assemble import build_prompt
 from llm.call_openai import generate_llm_explanation
-from models.datatypes import CommitInfo, CodeRegion, PromptRow
+from models.datatypes import CommitInfo, CodeRegion, PromptRow, PromptResponse
 
 LOGGING_LEVEL = "DEBUG" # Comment this line for default usage
-logger.setLevel(LOGGING_LEVEL)
+logger.setLevel(LOGGING_LEVEL or "INFO")
 
 DATA_SAMPLE = "sample_issues2" # Sample data identifier
 
@@ -26,13 +27,13 @@ OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations_newprompt.jsonl")
 FIXED_INSTRUCTIONS = '''
 Given the topic and summary of the issue, analyze the provided code region and explain both why a change is necessary and what changes should be made to address or improve it. Be specific to the code shown, but acknowledge if the fix likely involves updates in other parts of the codebase. Justify your recommendations clearly and concisely, referencing relevant patterns or best practices where appropriate. Use the following format:
 
-Explanation of the issue:
+## Explanation of the issue:
 <What is the issue and why a change is needed (1 paragraph)>
 
-Suggested code changes:
+### Suggested code changes:
 <Describe what changes should be made to fix or improve the code>
 
-Supplementary notes (if any):
+### Supplementary notes (if any):
 <Any references to best practices, broader architectural concerns, etc.>
 '''
 
@@ -68,15 +69,10 @@ def load_topic_map():
 
 
 @task
-def save_response(repo, issue_no, topic_name, explanation):
+def save_response(response: PromptResponse):
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, "a") as f:
-        f.write(json.dumps({
-            "repo": repo,
-            "issue_no": issue_no,
-            "topic": topic_name,
-            "explanation": explanation
-        }) + "\n")
+        f.write(json.dumps(asdict(response)) + "\n")
 
 
 @flow
@@ -89,7 +85,7 @@ def explanation_flow():
             topic_name = f"{row.bertopic}: {map_topic_number_to_name(row.bertopic, topic_map)}"
             commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
             code_regions: list[CodeRegion] = get_code_regions(row.repo, commits)
-            logger.debug(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
+            logger.info(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
             readme = get_readme_head(row.repo)
 
             region_outputs = []
@@ -104,7 +100,8 @@ def explanation_flow():
                 explanation = generate_llm_explanation(prompt_json)
                 region_outputs.append({"code": region.code, "explanation": explanation})
 
-            save_response(row.repo, row.issue_no, topic_name, region_outputs)
+            response = PromptResponse(repo=row.repo,issue_no=row.issue_no,topic=topic_name,code_regions=region_outputs)
+            save_response(response)
 
         except Exception as e:
             print(f"Error processing {row.repo}#{row.issue_no}: {e}")
