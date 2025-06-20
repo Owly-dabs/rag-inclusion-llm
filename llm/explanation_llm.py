@@ -2,6 +2,8 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from utils.logger import logger
+
 load_dotenv()
 
 client = OpenAI(
@@ -32,5 +34,5 @@ def generate_llm_explanation(prompt: str, model: str = "gpt-4o", temperature: fl
         return response.choices[0].message.content.strip()
 
     except Exception as e:
-        print(f"[ERROR] LLM call failed: {e}")
+        logger.error(f"LLM call failed: {e}")
         return ""

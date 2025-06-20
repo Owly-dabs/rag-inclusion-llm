@@ -10,8 +10,8 @@ from github_api.fetch_commits import get_commits_from_pr
 from github_api.fetch_diffs import get_code_regions
 from github_api.fetch_readme import get_readme_head
 from utils.topic_mapping import map_topic_number_to_name
-from prompt.assemble import build_prompt
-from llm.call_openai import generate_llm_explanation
+from prompt.assemble import build_explanation_prompt
+from llm.explanation_llm import generate_llm_explanation
 from models.datatypes import CommitInfo, CodeRegion, PromptRow, PromptResponse
 
 LOGGING_LEVEL = "DEBUG" # Comment this line for default usage
@@ -21,7 +21,7 @@ DATA_SAMPLE = "sample_issues2" # Sample data identifier
 
 DATA_PATH = Path(f"data/{DATA_SAMPLE}.feather")  # Feather format
 MAPTOPIC_PATH = Path("data/maptopics.csv")
-OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations_newprompt.jsonl")
+OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations.jsonl")
 
 # FIXED_INSTRUCTIONS = "Explain what code changes need to be made, and why."
 FIXED_INSTRUCTIONS = '''
@@ -84,21 +84,21 @@ def explanation_flow():
         try:
             topic_name = f"{row.bertopic}: {map_topic_number_to_name(row.bertopic, topic_map)}"
             commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
-            code_regions: list[CodeRegion] = get_code_regions(row.repo, commits)
+            code_regions: list[tuple[CodeRegion,CodeRegion]] = get_code_regions(row.repo, commits)
             logger.info(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
             readme = get_readme_head(row.repo)
 
             region_outputs = []
-            for region in code_regions:
-                prompt_json = build_prompt(
+            for pre_region, _ in code_regions:
+                prompt_json = build_explanation_prompt(
                     topic_name=topic_name,
                     summary=row.summary,
-                    code_region=region,  # single region
+                    code_region=pre_region,  # single region
                     extra={"readme": readme},
                     instructions=FIXED_INSTRUCTIONS
                 )
                 explanation = generate_llm_explanation(prompt_json)
-                region_outputs.append({"code": region.code, "explanation": explanation})
+                region_outputs.append({"code": pre_region.code, "explanation": explanation})
 
             response = PromptResponse(repo=row.repo,issue_no=row.issue_no,topic=topic_name,code_regions=region_outputs)
             save_response(response)

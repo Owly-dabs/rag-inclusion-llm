@@ -1,6 +1,6 @@
 from pathlib import Path
 from utils.topic_mapping import map_topic_number_to_name
-from flows.generate_explanation import load_topic_map
+from flows.explanation_flow import load_topic_map
 
 MAPTOPIC_PATH = Path("data/maptopics.csv")
 

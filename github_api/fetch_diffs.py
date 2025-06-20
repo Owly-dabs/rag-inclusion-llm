@@ -5,24 +5,36 @@ from dotenv import load_dotenv
 from github_api.fetch_commits import get_commit_objects
 from models.datatypes import CommitInfo, CodeRegion
 from utils.file_filters import is_test_file
+from utils.logger import logger
 
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 g = Github(GITHUB_TOKEN)
 
-
-def _get_file_content_before_commit(repo: Repository.Repository, commit: Commit.Commit) -> dict[str, str]:
-    parent = commit.parents[0] if commit.parents else None
-    if not parent:
-        return {}
-
+def _get_file_content(repo: Repository.Repository, commit: Commit.Commit, parent: Commit.Commit | None = None) -> dict[str, str]:
     file_versions = {}
+    if not parent: parent = commit
     for file in commit.files:
         try:
             contents = repo.get_contents(file.filename, ref=parent.sha)
             file_versions[file.filename] = contents.decoded_content.decode()
         except Exception:
             continue
+    return file_versions
+
+def _get_file_content_before_commit(repo: Repository.Repository, commit: Commit.Commit) -> dict[str, str]:
+    parent = commit.parents[0] if commit.parents else None
+    if not parent:
+        return {}
+
+    file_versions = _get_file_content(repo, commit, parent)
+    # file_versions = {}
+    # for file in commit.files:
+    #     try:
+    #         contents = repo.get_contents(file.filename, ref=parent.sha)
+    #         file_versions[file.filename] = contents.decoded_content.decode()
+    #     except Exception:
+    #         continue
 
     return file_versions
 
@@ -43,30 +55,82 @@ def _extract_code_regions_around_patch(pre_change_code: str, patch: str, context
 
     return code_blocks
 
+def _extract_matched_code_regions(pre_code: str, post_code: str, patch: str, context_lines: int = 3) -> list[tuple[str, str]]:
+    pre_lines = pre_code.splitlines()
+    post_lines = post_code.splitlines()
+    pairs = []
 
-def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lines: int = 3) -> list[CodeRegion]:
+    # Matches both pre and post start lines from unified diff header
+    for match in re.finditer(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))?", patch):
+        start_pre = int(match.group(1)) - 1
+        len_pre = int(match.group(2)) if match.group(2) else 1
+        start_post = int(match.group(3)) - 1
+        len_post = int(match.group(4)) if match.group(4) else 1
+
+        lower_pre = max(0, start_pre - context_lines)
+        upper_pre = min(len(pre_lines), start_pre + len_pre + context_lines)
+        region_pre = "\n".join(pre_lines[lower_pre:upper_pre])
+
+        lower_post = max(0, start_post - context_lines)
+        upper_post = min(len(post_lines), start_post + len_post + context_lines)
+        region_post = "\n".join(post_lines[lower_post:upper_post])
+
+        pairs.append((region_pre, region_post))
+
+    return pairs
+
+
+
+# def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lines: int = 3) -> list[CodeRegion]:
+#     repo = g.get_repo(repo_full_name)
+#     commit_objs = get_commit_objects(repo, commits)
+#     # logger.debug(f"Fetching code regions for {len(commit_objs)} commits in {repo_full_name}")
+#     code_regions: list[CodeRegion] = []
+
+#     for commit in commit_objs:
+#         pre_change_files = _get_file_content_before_commit(repo, commit)
+
+#         for file in commit.files:
+#             if is_test_file(file.filename):
+#                 continue
+#             if file.patch and file.filename in pre_change_files:
+#                 pre_code = pre_change_files[file.filename]
+#                 regions = _extract_code_regions_around_patch(pre_code, file.patch, context_lines)
+
+#                 for region in regions:
+#                     code_regions.append(CodeRegion(
+#                         filename=file.filename,
+#                         code=region,
+#                     ))
+
+
+#     return code_regions
+
+def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lines: int = 3) -> list[tuple[CodeRegion, CodeRegion]]:
     repo = g.get_repo(repo_full_name)
     commit_objs = get_commit_objects(repo, commits)
-    code_regions: list[CodeRegion] = []
+    region_pairs: list[tuple[CodeRegion, CodeRegion]] = []
 
     for commit in commit_objs:
         pre_change_files = _get_file_content_before_commit(repo, commit)
+        post_change_files = _get_file_content(repo, commit)
 
         for file in commit.files:
             if is_test_file(file.filename):
                 continue
-            if file.patch and file.filename in pre_change_files:
+            if file.patch and file.filename in pre_change_files and file.filename in post_change_files:
                 pre_code = pre_change_files[file.filename]
-                regions = _extract_code_regions_around_patch(pre_code, file.patch, context_lines)
+                post_code = post_change_files[file.filename]
 
-                for region in regions:
-                    code_regions.append(CodeRegion(
-                        filename=file.filename,
-                        code=region
+                matched_regions = _extract_matched_code_regions(pre_code, post_code, file.patch, context_lines)
+
+                for region_pre, region_post in matched_regions:
+                    region_pairs.append((
+                        CodeRegion(filename=file.filename, code=region_pre),
+                        CodeRegion(filename=file.filename, code=region_post)
                     ))
 
-    return code_regions
-
+    return region_pairs
 
 def get_code_diffs(repo_full_name: str, commits: list) -> str:
     """

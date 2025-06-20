@@ -9,3 +9,4 @@ log*
 .clj-kondo
 .lsp
 .venv
+.vscode
