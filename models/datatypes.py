@@ -32,3 +32,13 @@ class PromptResponse:
 
     def __iter__(self):
         return iter(asdict(self))
+
+@dataclass
+class ReflectionResponse:
+    repo: str
+    issue_no: int
+    topic: str
+    code_before: str
+    code_after: str
+    original_explanation: str
+    reflection_response: str
