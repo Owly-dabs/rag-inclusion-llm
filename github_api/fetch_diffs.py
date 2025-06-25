@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from github_api.fetch_commits import get_commit_objects
 from models.datatypes import CommitInfo, CodeRegion
-from utils.file_filters import is_test_file
+from utils.file_filters import is_test_file, is_valid_file
 from utils.logger import logger
 
 load_dotenv()
@@ -147,7 +147,7 @@ def get_code_regions_from_pr(repo_full_name: str, issue_no: int, context_lines: 
         except Exception:
             continue
 
-        if file.patch and not is_test_file(file.filename):
+        if file.patch and is_valid_file(file.filename):
             matched_regions = _extract_matched_code_regions(pre_code, post_code, file.patch, context_lines)
             for pre, post in matched_regions:
                 region_pairs.append((
