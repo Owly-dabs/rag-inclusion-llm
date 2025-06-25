@@ -132,6 +132,9 @@ def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lin
 
     return region_pairs
 
+class CodeRegionLimitException(Exception):
+    pass
+
 def get_code_regions_from_pr(repo_full_name: str, issue_no: int, context_lines: int = 3) -> list[tuple[CodeRegion, CodeRegion]]:
     repo = g.get_repo(repo_full_name)
     pr = repo.get_pull(issue_no)
@@ -150,10 +153,14 @@ def get_code_regions_from_pr(repo_full_name: str, issue_no: int, context_lines: 
         if file.patch and is_valid_file(file.filename):
             matched_regions = _extract_matched_code_regions(pre_code, post_code, file.patch, context_lines)
             for pre, post in matched_regions:
+                if len(region_pairs) >= 10: # Limit to 10 code region pairs
+                    raise CodeRegionLimitException("The number of code region pairs exceeds the limit of 10")
                 region_pairs.append((
                     CodeRegion(filename=file.filename, code=pre),
                     CodeRegion(filename=file.filename, code=post)
                 ))
+    if len(region_pairs) == 0:
+        raise CodeRegionLimitException("No valid code regions found in the PR")
 
     return region_pairs
 

@@ -7,7 +7,7 @@ from dataclasses import asdict
 # Local imports (these modules you will define)
 from utils.logger import logger
 from github_api.fetch_commits import get_commits_from_pr
-from github_api.fetch_diffs import get_code_regions, get_code_regions_from_pr
+from github_api.fetch_diffs import get_code_regions, get_code_regions_from_pr, CodeRegionLimitException
 from github_api.fetch_readme import get_readme_head
 from utils.topic_mapping import map_topic_number_to_name
 from prompt.assemble import build_explanation_prompt
@@ -17,11 +17,11 @@ from models.datatypes import CommitInfo, CodeRegion, PromptRow, PromptResponse
 LOGGING_LEVEL = "DEBUG" # Comment this line for default usage
 logger.setLevel(LOGGING_LEVEL or "INFO")
 
-DATA_SAMPLE = "debug" # Sample data identifier
+DATA_SAMPLE = "01010_edited" # Sample data identifier
 
 DATA_PATH = Path(f"data/{DATA_SAMPLE}.feather")  # Feather format
 MAPTOPIC_PATH = Path("data/maptopics.csv")
-OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations2.jsonl")
+OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations.jsonl")
 
 # FIXED INSTRUCTIONS = '''
 
@@ -88,8 +88,11 @@ def explanation_flow():
             # commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
             try:
                 code_regions: list[tuple[CodeRegion,CodeRegion]] = get_code_regions_from_pr(row.repo, row.issue_no)
+            except CodeRegionLimitException as cre_error:
+                logger.info(f"{cre_error} for {row.repo}#{row.issue_no}. Skipping this issue.")
+                continue
             except Exception as pr_error:
-                logger.info(f"No PR found for {row.repo}#{row.issue_no}. Skipping this issue. Info: {pr_error}")
+                logger.debug(f"No PR found for {row.repo}#{row.issue_no}. Skipping this issue. Info: {pr_error}")
                 continue  # Skip this issue and move to the next one
             
             logger.info(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
