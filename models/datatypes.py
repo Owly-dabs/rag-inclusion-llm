@@ -14,6 +14,14 @@ class CodeRegion:
     code: str
     explanation: str = None  # Optional explanation for the code region
 
+@dataclass 
+class CodeRegionReflection:
+    filename: str
+    code_before: str
+    code_after: str
+    original_explanation: str
+    reflection_response: str
+
 @dataclass
 class PromptRow:
     repo: str
@@ -39,7 +47,8 @@ class ReflectionResponse:
     repo: str
     issue_no: int
     topic: str
-    code_before: str
-    code_after: str
-    original_explanation: str
-    reflection_response: str
+    code_regions: List[CodeRegionReflection]
+    # code_before: str
+    # code_after: str
+    # original_explanation: str
+    # reflection_response: str
