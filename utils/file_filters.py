@@ -17,7 +17,7 @@ def is_valid_file(filename: str) -> bool:
     """
     Return True if a filename is valid for processing.
     """
-    return is_test_file(filename) and not any(
+    return not is_test_file(filename) and not any(
         filename.endswith(ext) for ext in (
             '.md', '.rst', '.txt',  # Documentation files
             '.json', '.yaml', '.yml', '.ini',  # Configuration files
