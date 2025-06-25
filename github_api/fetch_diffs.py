@@ -132,6 +132,31 @@ def get_code_regions(repo_full_name: str, commits: list[CommitInfo], context_lin
 
     return region_pairs
 
+def get_code_regions_from_pr(repo_full_name: str, issue_no: int, context_lines: int = 3) -> list[tuple[CodeRegion, CodeRegion]]:
+    repo = g.get_repo(repo_full_name)
+    pr = repo.get_pull(issue_no)
+    region_pairs = []
+
+    for file in pr.get_files():
+        if file.status == "removed":
+            continue  # No post-PR content
+
+        try:
+            pre_code = repo.get_contents(file.filename, ref=pr.base.sha).decoded_content.decode()
+            post_code = repo.get_contents(file.filename, ref=pr.head.sha).decoded_content.decode()
+        except Exception:
+            continue
+
+        if file.patch and not is_test_file(file.filename):
+            matched_regions = _extract_matched_code_regions(pre_code, post_code, file.patch, context_lines)
+            for pre, post in matched_regions:
+                region_pairs.append((
+                    CodeRegion(filename=file.filename, code=pre),
+                    CodeRegion(filename=file.filename, code=post)
+                ))
+
+    return region_pairs
+
 def get_code_diffs(repo_full_name: str, commits: list) -> str:
     """
     Fetches and concatenates code diffs (patches) for a list of commit SHAs.

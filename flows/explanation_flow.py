@@ -7,7 +7,7 @@ from dataclasses import asdict
 # Local imports (these modules you will define)
 from utils.logger import logger
 from github_api.fetch_commits import get_commits_from_pr
-from github_api.fetch_diffs import get_code_regions
+from github_api.fetch_diffs import get_code_regions, get_code_regions_from_pr
 from github_api.fetch_readme import get_readme_head
 from utils.topic_mapping import map_topic_number_to_name
 from prompt.assemble import build_explanation_prompt
@@ -17,11 +17,13 @@ from models.datatypes import CommitInfo, CodeRegion, PromptRow, PromptResponse
 LOGGING_LEVEL = "DEBUG" # Comment this line for default usage
 logger.setLevel(LOGGING_LEVEL or "INFO")
 
-DATA_SAMPLE = "sample_issues2" # Sample data identifier
+DATA_SAMPLE = "debug" # Sample data identifier
 
 DATA_PATH = Path(f"data/{DATA_SAMPLE}.feather")  # Feather format
 MAPTOPIC_PATH = Path("data/maptopics.csv")
-OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations.jsonl")
+OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations2.jsonl")
+
+# FIXED INSTRUCTIONS = '''
 
 # FIXED_INSTRUCTIONS = "Explain what code changes need to be made, and why."
 FIXED_INSTRUCTIONS = '''
@@ -83,8 +85,13 @@ def explanation_flow():
     for row in rows:
         try:
             topic_name = f"{row.bertopic}: {map_topic_number_to_name(row.bertopic, topic_map)}"
-            commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
-            code_regions: list[tuple[CodeRegion,CodeRegion]] = get_code_regions(row.repo, commits)
+            # commits: list[CommitInfo] = get_commits_from_pr(row.repo, row.issue_no)
+            try:
+                code_regions: list[tuple[CodeRegion,CodeRegion]] = get_code_regions_from_pr(row.repo, row.issue_no)
+            except Exception as pr_error:
+                logger.info(f"No PR found for {row.repo}#{row.issue_no}. Skipping this issue. Info: {pr_error}")
+                continue  # Skip this issue and move to the next one
+            
             logger.info(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
             readme = get_readme_head(row.repo)
 
@@ -98,13 +105,18 @@ def explanation_flow():
                     instructions=FIXED_INSTRUCTIONS
                 )
                 explanation = generate_llm_explanation(prompt_json)
-                region_outputs.append({"code": pre_region.code, "explanation": explanation})
+                region_outputs.append(CodeRegion(
+                    filename=pre_region.filename,
+                    code=pre_region.code,
+                    explanation=explanation
+                ))
+                # region_outputs.append({"code": pre_region.code, "explanation": explanation})
 
             response = PromptResponse(repo=row.repo,issue_no=row.issue_no,topic=topic_name,code_regions=region_outputs)
             save_response(response)
 
         except Exception as e:
-            print(f"Error processing {row.repo}#{row.issue_no}: {e}")
+            logger.error(f"Error processing {row.repo}#{row.issue_no}: {e}")
 
 
 if __name__ == "__main__":

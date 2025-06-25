@@ -12,6 +12,7 @@ class CommitInfo:
 class CodeRegion:
     filename: str
     code: str
+    explanation: str = None  # Optional explanation for the code region
 
 @dataclass
 class PromptRow:
