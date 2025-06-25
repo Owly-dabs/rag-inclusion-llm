@@ -104,6 +104,7 @@ def plots(ims, figsize=(12,6), rows=None, cols=None, interp=False, titles=None, 
 ---
 
 # Repository: fastai/fastai#40: 4: Application - Environment Setup  Validation
+*Darryl's comments: This is a pretty good attempt at fixing the issue. It identified the correct part of the code that needed the fix, even though its fix wasn't a perfect replica of the actual code change.*
 ### Code Before:
 ```
         ims = np.array(ims)
@@ -180,6 +181,7 @@ The issue in the provided code snippet relates to the plotting of images in a gr
 ---
 
 # Repository: fastai/fastai#40: 4: Application - Environment Setup  Validation
+*Darryl's comments: This is a pretty good attempt at fixing the issue. It identified the correct part of the code that needed the fix and came quite close to the original intent and function of the actual code change.*
 ### Code Before:
 ```
         titles (list): list of titles
@@ -271,6 +273,7 @@ for i in range(num_images):
 ---
 
 # Repository: fastai/fastai#40: 4: Application - Environment Setup  Validation
+*Darryl's comments: This is a pretty good attempt at fixing the issue. It identified the correct part of the code that needed the fix and came quite close to the original intent and function of the actual code change.*
 ### Code Before:
 ```
     plt.ylabel('True label')
@@ -360,6 +363,7 @@ def plots_raw(ims, figsize=(12,6), rows=1, titles=None):
 ---
 
 # Repository: PrefectHQ/prefect#3549: 65: API - Rate Limit  BP - implementation and stability fixes
+*Darryl's comments: This is quite a good fix for the issue described. Don't really need reflections but... Reflections state that knowing the usage (in Prefect Cloud Server) would have helped it make a more contextualized answer --> docs as a possible extra info source? Reflections also suggest that knowing where serialize and validate_json is used would have helped the generation.*
 ### Code Before:
 ```
 
@@ -465,6 +469,7 @@ The issue at hand involves the error handling mechanism for JSON serialization w
 ---
 
 # Repository: h2oai/h2o-3#3: 438: NLP - Chatbot - Machine Learning Model Evaluation  Types  and Techniques
+*Don't really think this is a good example to reflect on. Weaver class can't be found, so I'm not sure whether including it would be a good idea. Of course, it seems that including the Weaver class would be obvious, even though I'm not sure how it would have been able to infer that.* 
 ### Code Before:
 ```
 
@@ -544,6 +549,7 @@ This solution aligns with best practices in Java environments where multiple cla
 ---
 
 # Repository: h2oai/h2o-3#3: 438: NLP - Chatbot - Machine Learning Model Evaluation  Types  and Techniques
+*Don't really think this is a good example to reflect on. Weaver class can't be found, so I'm not sure whether including it would be a good idea. Of course, it seems that including the Weaver class would be obvious, even though I'm not sure how it would have been able to infer that.* 
 ### Code Before:
 ```
     // class, but also to allow parallel class-gens of unrelated Iced).
