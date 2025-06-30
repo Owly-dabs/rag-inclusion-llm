@@ -13,6 +13,7 @@ class CodeRegion:
     filename: str
     code: str
     explanation: str = None  # Optional explanation for the code region
+    answer: str = None  # Optional answer for the code region, if applicable
 
 @dataclass 
 class CodeRegionReflection:
@@ -28,6 +29,15 @@ class PromptRow:
     issue_no: int
     summary: str
     bertopic: int
+    
+@dataclass
+class ManualPromptRow:
+    url: str
+    summary: str
+    topic: str
+    code: str
+    extra: str
+    answer: str
 
 @dataclass
 class PromptResponse:

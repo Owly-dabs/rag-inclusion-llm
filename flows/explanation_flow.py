@@ -17,7 +17,7 @@ from models.datatypes import CommitInfo, CodeRegion, PromptRow, PromptResponse
 LOGGING_LEVEL = "DEBUG" # Comment this line for default usage
 logger.setLevel(LOGGING_LEVEL or "INFO")
 
-DATA_SAMPLE = "01010_edited" # Sample data identifier
+DATA_SAMPLE = "sample_issues2" # Sample data identifier
 
 DATA_PATH = Path(f"data/{DATA_SAMPLE}.feather")  # Feather format
 MAPTOPIC_PATH = Path("data/maptopics.csv")
@@ -28,6 +28,8 @@ OUTPUT_PATH = Path(f"outputs/{DATA_SAMPLE}/explanations.jsonl")
 # FIXED_INSTRUCTIONS = "Explain what code changes need to be made, and why."
 FIXED_INSTRUCTIONS = '''
 Given the topic and summary of the issue, analyze the provided code region and explain both why a change is necessary and what changes should be made to address or improve it. Be specific to the code shown, but acknowledge if the fix likely involves updates in other parts of the codebase. Justify your recommendations clearly and concisely, referencing relevant patterns or best practices where appropriate. Use the following format:
+
+Additionally, refer to the "extra_info" section provided for any additional context that may assist your explanation and recommendations.
 
 ## Explanation of the issue:
 <What is the issue and why a change is needed (1 paragraph)>
@@ -40,8 +42,8 @@ Given the topic and summary of the issue, analyze the provided code region and e
 '''
 
 @task
-def load_data() -> list[PromptRow]:
-    df = pd.read_feather(DATA_PATH)
+def load_data(data_path: Path = DATA_PATH) -> list[PromptRow]:
+    df = pd.read_feather(data_path)
 
     # Filter for rows where 'bertopic' is not -1, which means topic has been successfully classified
     # Filter for rows where 'chunk' is 0, which is where the summary of the issue is given
@@ -71,15 +73,15 @@ def load_topic_map():
 
 
 @task
-def save_response(response: PromptResponse):
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH, "a") as f:
+def save_response(response: PromptResponse, output_path: Path = OUTPUT_PATH):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "a") as f:
         f.write(json.dumps(asdict(response)) + "\n")
 
 
 @flow
-def explanation_flow():
-    rows = load_data()
+def explanation_flow(data_path: Path = DATA_PATH, output_path: Path = OUTPUT_PATH, extra_info: dict | None = None):
+    rows = load_data(data_path)
     topic_map = load_topic_map()
 
     for row in rows:
@@ -96,7 +98,11 @@ def explanation_flow():
                 continue  # Skip this issue and move to the next one
             
             logger.info(f"Processing {row.repo}#{row.issue_no} for topic '{topic_name}' with {len(code_regions)} code regions.")
-            readme = get_readme_head(row.repo)
+            
+            extra = {"readme": get_readme_head(row.repo)}
+
+            if extra_info:
+                extra.update(extra_info)
 
             region_outputs = []
             for pre_region, _ in code_regions:
@@ -104,7 +110,7 @@ def explanation_flow():
                     topic_name=topic_name,
                     summary=row.summary,
                     code_region=pre_region,  # single region
-                    extra={"readme": readme},
+                    extra=extra,
                     instructions=FIXED_INSTRUCTIONS
                 )
                 explanation = generate_llm_explanation(prompt_json)
@@ -116,7 +122,8 @@ def explanation_flow():
                 # region_outputs.append({"code": pre_region.code, "explanation": explanation})
 
             response = PromptResponse(repo=row.repo,issue_no=row.issue_no,topic=topic_name,code_regions=region_outputs)
-            save_response(response)
+            
+            save_response(response, output_path)
 
         except Exception as e:
             logger.error(f"Error processing {row.repo}#{row.issue_no}: {e}")

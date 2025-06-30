@@ -27,7 +27,7 @@ def build_explanation_prompt(
         "topic": topic_name,
         "summary": summary,
         "code_context": code_region.code,
-        "readme": extra.get("readme", ""),
+        "extra_info": extra,
         "instructions": instructions
     }
 

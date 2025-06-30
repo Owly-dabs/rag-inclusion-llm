@@ -1,4 +1,5 @@
 # Repository: fastai/fastai#40: 4: Application - Environment Setup  Validation
+*Darryl's comments: The fixes for this issue is quite close to the actual fix. Actual code fix made a function in the first code region and implemented it in the rest of the code regions. Suggested code fix simply implemented the functionality in each individual region*
 ## File: fastai/plots.py
 ### Code Before:
 ```
@@ -346,6 +347,7 @@ The issue at hand involves the plotting functionality of images, where previousl
 ---
 
 # Repository: fastai/fastai#3465: 115: Automation - Ansible - Other Technology Domains
+*Darryl's comments: Just adding a comment. Skipped.*
 ## File: nbs/examples/migrating_pytorch_verbose.ipynb
 ### Code Before:
 ```

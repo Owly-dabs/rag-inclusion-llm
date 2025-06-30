@@ -21,7 +21,7 @@ def is_valid_file(filename: str) -> bool:
         filename.endswith(ext) for ext in (
             '.md', '.rst', '.txt',  # Documentation files
             '.json', '.yaml', '.yml', '.ini',  # Configuration files
-            '.yml', '.yaml', '.gitlab-ci.yml', '.github/workflows/',  # CI/CD files
+            '.yml', '.yaml', '.gitlab-ci.yml', '.github/workflows/', '.gitignore', # CI/CD files
             'Dockerfile', 'Jenkinsfile', 'Makefile',  # Other CI/CD related files
             '.xml', '.properties',  # Additional configuration files
             '.env',  # Environment variable files
